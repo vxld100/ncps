@@ -219,9 +219,16 @@ class LTCCell(nn.Module):
         w_numerator_sensory = torch.sum(sensory_rev_activation, dim=1)
         w_denominator_sensory = torch.sum(sensory_w_activation, dim=1)
 
+        # cm/t calculation needs adjustment for batching
+        # Make elapsed_time broadcastable with cm ([H,]) by giving it shape [B, 1]
+        if elapsed_time.dim() == 1: # Check if it's batched (shape [B,])
+             elapsed_time_b = elapsed_time.unsqueeze(-1) # Shape [B, 1]
+        else: # If it's already scalar (e.g., batch size 1 or no batching)
+             elapsed_time_b = elapsed_time # Keep as i
+
         # cm/t is loop invariant
         cm_t = self.make_positive_fn(self._params["cm"]) / (
-            elapsed_time / self._ode_unfolds
+            elapsed_time_b / self._ode_unfolds
         )
 
         # Unfold the multiply ODE multiple times into one RNN step
